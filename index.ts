@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import jimp from "jimp";
 import { fileTypeFromFile } from "file-type";
+import puppeteer from "puppeteer";
 
 async function readQrCodeFiles(directory: string): Promise<string[]> {
   const files = fs.readdirSync(directory);
@@ -27,6 +28,24 @@ async function readQrCode(qrcodeFile: string): Promise<any> {
   });
 }
 
+async function captureScreenShot(
+  url: string,
+  directory: string
+): Promise<void> {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.goto(url);
+  await page.screenshot({
+    path: path.join(directory, createScreenshotFilename(url)),
+  });
+  await browser.close();
+}
+
+function createScreenshotFilename(url: string): string {
+  const filename = url.replaceAll(/[:\.\/]/g, "_");
+  return `${filename}.jpg`;
+}
+
 (async () => {
   const qrcodeFiles = await readQrCodeFiles("qr");
   console.log(qrcodeFiles);
@@ -34,6 +53,7 @@ async function readQrCode(qrcodeFile: string): Promise<any> {
     try {
       const result = await readQrCode(qrcodeFile);
       console.log(result.result);
+      await captureScreenShot(result.result, "result");
     } catch (error) {
       console.log(error);
     }
