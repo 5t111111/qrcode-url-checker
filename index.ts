@@ -1,13 +1,23 @@
 import QRReader from "qrcode-reader";
 import fs from "fs";
+import path from "path";
 import jimp from "jimp";
+import { fileTypeFromFile } from "file-type";
 
-function readQrCodeFiles(directory: string): string[] {
-  return fs.readdirSync(directory);
+async function readQrCodeFiles(directory: string): Promise<string[]> {
+  const files = fs.readdirSync(directory);
+  const fileWithPaths = files.map((filename) => path.join(directory, filename));
+  const promiseCallbacks = await Promise.all(
+    fileWithPaths.map(async (filename) => {
+      const fileType = await fileTypeFromFile(filename);
+      return fileType?.mime.includes("image/");
+    })
+  );
+  return fileWithPaths.filter((_, i) => promiseCallbacks[i]);
 }
 
-async function readQrCode(qrcodeFile: string): Promise<string> {
-  const img = await jimp.read(fs.readFileSync("./qr_photo.png"));
+async function readQrCode(qrcodeFile: string): Promise<any> {
+  const img = await jimp.read(fs.readFileSync(qrcodeFile));
   const qr = new QRReader();
 
   return await new Promise((resolve, reject) => {
@@ -18,9 +28,14 @@ async function readQrCode(qrcodeFile: string): Promise<string> {
 }
 
 (async () => {
-  const qrcodeFiles = readQrCodeFiles("qr");
+  const qrcodeFiles = await readQrCodeFiles("qr");
+  console.log(qrcodeFiles);
   for (const qrcodeFile of qrcodeFiles) {
-    const result = await readQrCode(qrcodeFile);
-    console.log(result);
+    try {
+      const result = await readQrCode(qrcodeFile);
+      console.log(result.result);
+    } catch (error) {
+      console.log(error);
+    }
   }
 })();
