@@ -52,7 +52,7 @@ function createScreenshotFilename(url: string): string {
   for (const qrcodeFile of qrcodeFiles) {
     try {
       const result = await readQrCode(qrcodeFile);
-      console.log(result.result);
+      console.log(`${qrcodeFile}\t${result.result}`);
       await captureScreenShot(result.result, "result");
     } catch (error) {
       console.log(error);
